@@ -1942,9 +1942,11 @@ loadSavedDataset();
 
 // ---- เว็บสาธารณะ (นอก Claude): ดึงข้อมูลล่าสุดจาก Google Sheet ทุกครั้งที่เปิดหน้า ----
 const SHEET_ID = '1BPfzmeVV0JhKxbDv3ph0kY6wRXhZt47Y3p2XQ6sxft0';
+const SHEET_NAME = 'SUBSS FODIS';
 async function loadFromGoogleSheet(){
   const t = Date.now();
   const urls = [
+    'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent(SHEET_NAME) + '&t=' + t,
     'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/export?format=csv&gid=0&t=' + t,
     'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&gid=0&t=' + t
   ];
@@ -1964,7 +1966,7 @@ async function loadFromGoogleSheet(){
       }else if('RowId' in rawRows[0] && 'Department' in rawRows[0]){
         rows = buildFilteredData(processRawCsvRows(rawRows).map((r,i)=>Object.assign(r, { Department:(rawRows[i].Department||'').trim(), KsfStatus:rawRows[i].KsfStatus||'', KsfDetails:rawRows[i].KsfDetails||'', ZpmOrder:rawRows[i].ZpmOrder||'', Inspector:rawRows[i].Inspector||'' })));
       }else{
-        throw new Error('คอลัมน์ในชีตไม่ตรงกับรูปแบบข้อมูล FODIS');
+        throw new Error('คอลัมน์ในชีตไม่ตรงกับรูปแบบข้อมูล FODIS — พบคอลัมน์: ' + Object.keys(rawRows[0]).slice(0,8).join(', '));
       }
       applyDataset(rows);
       showUploadStatus('โหลดข้อมูลล่าสุดจาก Google Sheet สำเร็จ — ' + DATA_ALL.length + ' รายการ', 'ok');
