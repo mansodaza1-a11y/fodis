@@ -253,10 +253,6 @@
       </div>
       <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
         <select id="globalYearSel" style="background:var(--card); border:1px solid var(--border); color:var(--text); padding:9px 14px; border-radius:10px; font-family:var(--sans); font-size:13.5px; font-weight:600; outline:none; box-shadow:var(--shadow-sm);"></select>
-        <button id="btnDownloadHtml" type="button" class="btn-primary md" title="ดาวน์โหลดแดชบอร์ดนี้เป็นไฟล์ HTML (พร้อมข้อมูลปัจจุบัน)" style="background:var(--brand-light); color:var(--brand-dark); border:1px solid var(--border); box-shadow:none;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5"/><path d="M16 7l5 5-5 5"/><path d="M14 4l-4 16"/></svg>
-          ไฟล์ HTML
-        </button>
         <div class="asof"><span class="pulse"></span>ข้อมูลล่าสุด: <b id="asof">—</b></div>
         <label id="btnUploadData" class="btn-primary md">
           ⬆ Upload File FODIS (CSV)
@@ -753,8 +749,6 @@ Chart.defaults.color = '#6B7686';
 Chart.defaults.font.family = "Sarabun";
 Chart.defaults.borderColor = '#E4E9F0';
 
-// เก็บหน้าเว็บในสภาพเดิมก่อนวาดกราฟ/ตาราง ไว้ใช้สร้างไฟล์ HTML สำหรับดาวน์โหลด
-const PRISTINE_HTML = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
 const ALL_DEPTS = ['ผสม.', 'ผปค.', 'ผอส.'];
 const PRIORITY_ORDER = {'มาก':0, 'ปานกลาง':1, 'ต่ำ':2};
 const OFFICES = ['GBS','GSF','GFS','GKB'];
@@ -1698,43 +1692,6 @@ function showUploadStatus(msg, kind){
   uploadStatusEl.classList.remove('status-info','status-ok','status-error');
   uploadStatusEl.classList.add(kind === 'ok' ? 'status-ok' : (kind === 'error' ? 'status-error' : 'status-info'));
 }
-// ---- ดาวน์โหลดแดชบอร์ดนี้เป็นไฟล์ HTML (ฝังข้อมูลปัจจุบันไว้ในไฟล์) ----
-async function saveBlobFile(blob, filename){
-  let dl = null;
-  try{ dl = (window.claude && window.claude.use) ? await window.claude.use('downloads') : null; }catch(e){ dl = null; }
-  if(dl){
-    try{ await dl.save({ filename, data: blob }); }
-    catch(err){ if(!(err && err.code === 'declined')) showUploadStatus('บันทึกไฟล์ไม่สำเร็จ: ' + ((err && err.message) || 'ไม่ทราบสาเหตุ'), 'error'); }
-    return;
-  }
-  if(window.claude && window.claude.use){
-    showUploadStatus('มุมมองนี้ยังบันทึกไฟล์ HTML ไม่ได้ — ลองเปิดลิงก์ผ่าน claude.ai โดยเข้าสู่ระบบ แล้วกดอีกครั้ง', 'error');
-    return;
-  }
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = filename;
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
-}
-function buildHtmlFileText(){
-  const CLOSE = '</scr' + 'ipt>';
-  const rows = DATA_ALL.map(r=>{ const o = Object.assign({}, r); Object.keys(o).forEach(k=>{ if(k.charAt(0)==='_') delete o[k]; }); return o; });
-  const json = JSON.stringify(rows).split('</').join('<\\/');
-  let html = PRISTINE_HTML;
-  const tag = html.indexOf('id="raw-data"');
-  const start = html.indexOf('>', tag) + 1;
-  const end = html.indexOf(CLOSE, start);
-  if(tag < 0 || end < 0) return null;
-  html = html.slice(0, start) + json + html.slice(end);
-  html = html.replace(/const EMBEDDED_AT = '[^']*'/, "const EMBEDDED_AT = '" + new Date().toISOString() + "'");
-  return html;
-}
-document.getElementById('btnDownloadHtml').addEventListener('click', ()=>{
-  const html = buildHtmlFileText();
-  if(!html){ showUploadStatus('สร้างไฟล์ HTML ไม่สำเร็จ', 'error'); return; }
-  saveBlobFile(new Blob([html], { type:'text/html;charset=utf-8' }), 'FODIS_dashboard_' + new Date().toISOString().slice(0,10) + '.html');
-});
-
 // ---- บันทึก/โหลดไฟล์ CSV ล่าสุด (เก็บเฉพาะชุดปัจจุบันชุดเดียว ผ่านที่เก็บข้อมูลของลิงก์) ----
 function applyDataset(rows){
   DATA_ALL = prepData(rows);
