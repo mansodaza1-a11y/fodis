@@ -1961,6 +1961,9 @@ async function loadFromGoogleSheet(){
       const parsed = Papa.parse(text, { header:true, skipEmptyLines:true });
       const rawRows = parsed.data;
       if(!rawRows.length) throw new Error('ไม่พบข้อมูลในชีต');
+      // แปลงปี ค.ศ. เป็น พ.ศ. (เช่น 20/3/2025 -> 20/3/2568) ให้ตรงกับรูปแบบข้อมูลของระบบ
+      const toBE = v => String(v == null ? '' : v).replace(/(\d{1,2}\/\d{1,2}\/)(\d{4})(?!\d)/, (m, dm, y) => +y < 2400 ? dm + (+y + 543) : m);
+      rawRows.forEach(r => { ['Timestamp','UpdatedDate','LastUpdated'].forEach(k => { if(k in r) r[k] = toBE(r[k]); }); });
       let rows;
       if('RowId' in rawRows[0] && ('Zpm_GBS_Department' in rawRows[0] || 'Zpm_GSF_Department' in rawRows[0])){
         rows = buildFilteredData(processRawCsvRows(rawRows));      // ไฟล์ export ดิบ
