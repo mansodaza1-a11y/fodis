@@ -762,7 +762,8 @@ function parseThaiDate(s){
   const m = (s||'').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if(!m) return null;
   const [,d,mo,y] = m;
-  return new Date(parseInt(y)-543, parseInt(mo)-1, parseInt(d));
+  const yy = parseInt(y); // ปี พ.ศ. (>2400) ลบ 543, ปี ค.ศ. ใช้ตามเดิม
+  return new Date(yy > 2400 ? yy-543 : yy, parseInt(mo)-1, parseInt(d));
 }
 
 function prepData(arr){
@@ -1942,13 +1943,13 @@ loadSavedDataset();
 
 // ---- เว็บสาธารณะ (นอก Claude): ดึงข้อมูลล่าสุดจาก Google Sheet ทุกครั้งที่เปิดหน้า ----
 const SHEET_ID = '1BPfzmeVV0JhKxbDv3ph0kY6wRXhZt47Y3p2XQ6sxft0';
-const SHEET_NAME = 'SUBSS FODIS';
+const SHEET_GID = '686161192';   // แท็บ SUBSS FODIS
 async function loadFromGoogleSheet(){
   const t = Date.now();
+  const base = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID;
   const urls = [
-    'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&sheet=' + encodeURIComponent(SHEET_NAME) + '&t=' + t,
-    'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/export?format=csv&gid=0&t=' + t,
-    'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&gid=0&t=' + t
+    base + '/gviz/tq?tqx=out:csv&gid=' + SHEET_GID + '&t=' + t,
+    base + '/export?format=csv&gid=' + SHEET_GID + '&t=' + t
   ];
   showUploadStatus('กำลังโหลดข้อมูลล่าสุดจาก Google Sheet ...', 'info');
   let lastErr = null;
