@@ -1940,41 +1940,6 @@ document.getElementById('globalYearSel').onchange = ()=>{
 initAll();
 loadSavedDataset();
 
-// ---- เว็บสาธารณะ (นอก Claude): ดึงข้อมูลล่าสุดจาก Google Sheet ทุกครั้งที่เปิดหน้า ----
-const SHEET_ID = '1BPfzmeVV0JhKxbDv3ph0kY6wRXhZt47Y3p2XQ6sxft0';
-async function loadFromGoogleSheet(){
-  const t = Date.now();
-  const urls = [
-    'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/export?format=csv&gid=0&t=' + t,
-    'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&gid=0&t=' + t
-  ];
-  showUploadStatus('กำลังโหลดข้อมูลล่าสุดจาก Google Sheet ...', 'info');
-  let lastErr = null;
-  for(const u of urls){
-    try{
-      const res = await fetch(u, { cache:'no-store' });
-      if(!res.ok) throw new Error('HTTP ' + res.status);
-      const text = await res.text();
-      const parsed = Papa.parse(text, { header:true, skipEmptyLines:true });
-      const rawRows = parsed.data;
-      if(!rawRows.length) throw new Error('ไม่พบข้อมูลในชีต');
-      let rows;
-      if('RowId' in rawRows[0] && ('Zpm_GBS_Department' in rawRows[0] || 'Zpm_GSF_Department' in rawRows[0])){
-        rows = buildFilteredData(processRawCsvRows(rawRows));      // ไฟล์ export ดิบ
-      }else if('RowId' in rawRows[0] && 'Department' in rawRows[0]){
-        rows = buildFilteredData(processRawCsvRows(rawRows).map((r,i)=>Object.assign(r, { Department:(rawRows[i].Department||'').trim(), KsfStatus:rawRows[i].KsfStatus||'', KsfDetails:rawRows[i].KsfDetails||'', ZpmOrder:rawRows[i].ZpmOrder||'', Inspector:rawRows[i].Inspector||'' })));
-      }else{
-        throw new Error('คอลัมน์ในชีตไม่ตรงกับรูปแบบข้อมูล FODIS');
-      }
-      applyDataset(rows);
-      showUploadStatus('โหลดข้อมูลล่าสุดจาก Google Sheet สำเร็จ — ' + DATA_ALL.length + ' รายการ', 'ok');
-      return;
-    }catch(err){ lastErr = err; }
-  }
-  showUploadStatus('โหลดจาก Google Sheet ไม่สำเร็จ (' + ((lastErr && lastErr.message) || 'ไม่ทราบสาเหตุ') + ') — แสดงข้อมูลที่ฝังไว้ในหน้าแทน ตรวจสอบว่าชีตแชร์แบบ "ทุกคนที่มีลิงก์ดูได้"', 'error');
-}
-if(!window.claude){ loadFromGoogleSheet(); }
-
 </script>
 </body>
 </html>
