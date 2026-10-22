@@ -254,10 +254,6 @@
       <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
         <select id="globalYearSel" style="background:var(--card); border:1px solid var(--border); color:var(--text); padding:9px 14px; border-radius:10px; font-family:var(--sans); font-size:13.5px; font-weight:600; outline:none; box-shadow:var(--shadow-sm);"></select>
         <div class="asof"><span class="pulse"></span>ข้อมูลล่าสุด: <b id="asof">—</b></div>
-        <label id="btnUploadData" class="btn-primary md">
-          ⬆ Upload File FODIS (CSV)
-          <input id="fileUploadData" type="file" accept=".csv" style="display:none;">
-        </label>
       </div>
     </div>
     <div id="uploadStatus" class="status-box" style="display:none;"></div>
@@ -1741,37 +1737,6 @@ async function loadSavedDataset(){
     showUploadStatus(`แสดงข้อมูลจากไฟล์ ${m.fileName} ที่อัปโหลดล่าสุด (${new Date(m.uploadedAt).toLocaleString('th-TH')}) — ${rows.length} รายการ`, 'ok');
   }catch(err){ /* ใช้ข้อมูลฝังในไฟล์ */ }
 }
-document.getElementById('fileUploadData').addEventListener('change', (e)=>{
-  const file = e.target.files[0];
-  if(!file) return;
-  showUploadStatus('กำลังประมวลผลไฟล์ ' + file.name + ' ...', 'info');
-  Papa.parse(file, {
-    header: true,
-    skipEmptyLines: true,
-    encoding: 'UTF-8',
-    complete: (results)=>{
-      try{
-        const rawRows = results.data;
-        if(!rawRows.length || !('RowId' in rawRows[0])){
-          showUploadStatus('ไม่พบคอลัมน์ข้อมูลที่คาดไว้ในไฟล์นี้ — กรุณาอัปโหลดไฟล์ export จากระบบ FODIS โดยตรง', 'error');
-          return;
-        }
-        const processed = processRawCsvRows(rawRows);
-        const filtered = buildFilteredData(processed);
-        const rowsToSave = JSON.parse(JSON.stringify(filtered)); // สำเนาก่อน prepData เติมฟิลด์ชั่วคราว
-        applyDataset(filtered);
-        showUploadStatus(`อัปเดตข้อมูลจากไฟล์ ${file.name} สำเร็จ — ${DATA_ALL.length} รายการ (คำนวณ ณ ` + new Date().toLocaleTimeString('th-TH') + ')', 'ok');
-        saveCurrentDataset(rowsToSave, file.name).then(res=>{
-          if(res === 'saved') showUploadStatus(`บันทึกไฟล์ ${file.name} เป็นข้อมูลปัจจุบันของลิงก์นี้แล้ว (${DATA_ALL.length} รายการ) — เปิดลิงก์ครั้งต่อไปจะเห็นข้อมูลชุดนี้`, 'ok');
-          else showUploadStatus(`แสดงข้อมูลจากไฟล์ ${file.name} แล้ว แต่ยังบันทึกลงลิงก์ไม่ได้ (ต้องเข้าสู่ระบบด้วยสิทธิ์ที่แก้ไขข้อมูลได้) — ข้อมูลจะหายเมื่อรีเฟรชหน้า`, 'error');
-        });
-      }catch(err){
-        showUploadStatus('เกิดข้อผิดพลาดขณะประมวลผลไฟล์: ' + err.message, 'error');
-      }
-    },
-    error: (err)=>{ showUploadStatus('อ่านไฟล์ไม่สำเร็จ: ' + err.message, 'error'); }
-  });
-});
 
 // Tabs
 document.querySelectorAll('.nav-item').forEach(el=>{
@@ -1939,7 +1904,6 @@ document.getElementById('globalYearSel').onchange = ()=>{
   initAll();
 };
 initAll();
-loadSavedDataset();
 
 // ---- เว็บสาธารณะ (นอก Claude): ดึงข้อมูลล่าสุดจาก Google Sheet ทุกครั้งที่เปิดหน้า ----
 const SHEET_ID = '1BPfzmeVV0JhKxbDv3ph0kY6wRXhZt47Y3p2XQ6sxft0';
