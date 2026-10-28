@@ -960,47 +960,109 @@ const PSM_TEAMS = [
     people:['นายวีระชัย จุลพันล์ (หัวหน้าทีม)','นายประวิทย์ อุตมะมุณีย์'],
     areas:['สฟฟ.ฉลุง','สฟฟ.หาดใหญ่ 1','สฟฟ.หาดใหญ่ 3','สฟฟ.สะเดา 1','สฟฟ.บางกล่ำ','สฟฟ.ด่านนอก','สฟฟ.พังลา','สฟฟ.ทุ่งลุง','สฟฟ.รัตภูมิ','สฟฟ.ป่าบอน','สฟฟ.ควนกาหลง','สฟฟ.สตูล','สฟฟ.ละงู','สฟฟ.ยะลา 1','สฟฟ.ยะลา 2','สฟฟ.ยะลา 3','สฟฟ.ยุพราชันย์','สฟฟ.คลองแงะ','สฟฟ.สะบ้าย้อย'] }
 ];
+const PSM_STATE = {};   // ค่าตัวกรองของแต่ละทีม (คงไว้เมื่อรีเฟรชข้อมูล)
+const PSM_XLS_HEADERS = ['ลำดับ','ความสำคัญ','วันที่แจ้ง','ใบสั่ง (OMS)','หมายเลขใบสั่ง ZPM2_กสฟ','พื้นที่','รหัสอุปกรณ์','ประเภทอุปกรณ์','อาการชำรุด','แผนก','รายละเอียด (กสฟ.)','สถานะ (OMS)','สถานะ (กสฟ.)','สถานะงาน'];
 function renderPsmTeams(){
   const box = document.getElementById('psmTeams');
   if(!box) return;
   const norm = a => String(a||'').replace(/\s+/g,' ').trim();
+  const opt = (v, cur) => `<option value="${v}"${cur===v?' selected':''}>${v}</option>`;
+  const teamRows = {};
   box.innerHTML = PSM_TEAMS.map(t=>{
     const set = new Set(t.areas.map(norm));
-    const rows = DATA.filter(r=> set.has(norm(r.Area))).sort((a,b)=> (b._date||0)-(a._date||0));
-    const done = rows.filter(r=>r._done).length;
-    const body = rows.map((r,i)=>`
-      <tr>
-        <td class="datecell">${i+1}</td>
-        <td><span class="prio-chip prio-${r.Priority}">${r.Priority}</span></td>
-        <td class="datecell">${r._date ? r._date.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'}) : (r.Timestamp||'-')}</td>
-        <td class="eq">${r.OmsOrder||'-'}</td>
-        <td>${r.Area||'-'}</td>
-        <td><span class="eq">${r.EquipmentId||'-'}</span><br><span class="sym">${r.EquipmentType||''}</span></td>
-        <td><span class="sym">${r.DefectSymptom||''}</span></td>
-        <td><span class="dept-badge">${r.Department||'ยังไม่มีผู้รับผิดชอบ'}</span></td>
-        <td>${ksfBadge(r.OmsStatus)}</td>
-        <td>${ksfBadge(r.KsfStatus)}</td>
-        <td>${r.JobStatus ? `<span class="badge ${r.JobStatus==='แก้ไขแล้วเสร็จ'?'b-done':'b-pending'}">${r.JobStatus}</span>` : '<span style="color:var(--muted);">-</span>'}</td>
-      </tr>`).join('');
+    teamRows[t.id] = DATA.filter(r=> set.has(norm(r.Area)));
+    const st = PSM_STATE[t.id] = Object.assign({dept:'',oms:'',prio:'',ksf:'',equip:'',job:'',area:'',q:''}, PSM_STATE[t.id]);
+    const base = teamRows[t.id];
+    const depts = [...new Set([...ALL_DEPTS, ...base.map(r=>r.Department).filter(Boolean), 'ยังไม่มีผู้รับผิดชอบ'])];
+    const equips = [...new Set(base.map(r=>r.EquipmentType).filter(Boolean))].sort();
+    const areas = t.areas.map(norm).filter(a=>base.some(r=>norm(r.Area)===a));
+    const sel = (key, first, inner) => `<select data-k="${key}"><option value="">${first}: ทั้งหมด</option>${inner}</select>`;
+    const copyOpts = (id, cur) => [...document.querySelectorAll('#'+id+' option')].filter(o=>o.value).map(o=>`<option value="${o.value}"${cur===o.value?' selected':''}>${o.textContent}</option>`).join('');
     return `
-    <div class="card" style="margin-bottom:16px;">
+    <div class="card psm-team" data-team="${t.id}" style="margin-bottom:16px;">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
         <div style="min-width:0;">
           <h2 style="color:${t.color};">${t.name}</h2>
           <div class="hint" style="margin-bottom:6px;">${t.people.join(' · ')}</div>
         </div>
-        <div style="font-family:var(--mono); font-size:13px;">${rows.length} รายการ · เสร็จ ${done} · ค้าง ${rows.length-done}</div>
+        <div class="psm-sum" style="font-family:var(--mono); font-size:13px;"></div>
       </div>
       <details style="margin-bottom:10px;"><summary class="hint" style="cursor:pointer;">สถานที่ที่รับผิดชอบ (${t.areas.length} แห่ง)</summary><div class="hint">${t.areas.join(' · ')}</div></details>
+      <div class="filters">
+        ${sel('area','พื้นที่', areas.map(a=>opt(a,st.area)).join(''))}
+        ${sel('dept','แผนก', depts.map(d=>opt(d,st.dept)).join(''))}
+        ${sel('oms','สถานะ (OMS)', copyOpts('fStatus', st.oms))}
+        ${sel('prio','ความสำคัญ', ['มาก','ปานกลาง','ต่ำ'].map(x=>opt(x,st.prio)).join(''))}
+        ${sel('ksf','สถานะ (กสฟ.)', copyOpts('fKsf', st.ksf))}
+        ${sel('equip','ประเภทอุปกรณ์', equips.map(x=>opt(x,st.equip)).join(''))}
+        ${sel('job','สถานะงาน', [...new Set(base.map(r=>r.JobStatus).filter(Boolean))].map(x=>opt(x,st.job)).join(''))}
+        <input data-k="q" type="text" placeholder="ค้นหา พื้นที่ / รหัสอุปกรณ์ / อาการชำรุด..." value="${st.q.replace(/"/g,'&quot;')}">
+        <button type="button" class="btn-primary md icon-only psm-dl" title="ดาวน์โหลด Excel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></svg></button>
+        <span class="count psm-count"></span>
+      </div>
       <div class="table-card"><div class="table-scroll" style="max-height:460px;">
         <table>
           <thead><tr><th>ลำดับ</th><th>ความสำคัญ</th><th>วันที่แจ้ง</th><th>ใบสั่ง (OMS)</th><th>พื้นที่</th><th>อุปกรณ์</th><th>อาการชำรุด</th><th>แผนก</th><th>สถานะ OMS</th><th>สถานะ (กสฟ.)</th><th>สถานะงาน</th></tr></thead>
-          <tbody>${body || '<tr><td colspan="11" style="text-align:center;color:var(--muted);">ไม่มีรายการ</td></tr>'}</tbody>
+          <tbody class="psm-body"></tbody>
         </table>
       </div></div>
     </div>`;
   }).join('');
+
+  PSM_TEAMS.forEach(t=>{
+    const card = box.querySelector(`.psm-team[data-team="${t.id}"]`);
+    const base = teamRows[t.id].slice().sort((a,b)=> (b._date||0)-(a._date||0));
+    const st = PSM_STATE[t.id];
+    let shown = [];
+    function draw(){
+      const qv = st.q.trim().toLowerCase();
+      shown = base.filter(r=>{
+        if(st.area && norm(r.Area)!==st.area) return false;
+        if(st.dept && (r.Department||'ยังไม่มีผู้รับผิดชอบ')!==st.dept) return false;
+        if(st.oms && r.OmsStatus!==st.oms) return false;
+        if(st.prio && r.Priority!==st.prio) return false;
+        if(st.ksf && r.KsfStatus!==st.ksf) return false;
+        if(st.equip && r.EquipmentType!==st.equip) return false;
+        if(st.job && r.JobStatus!==st.job) return false;
+        if(qv && !((r.Area||'')+' '+(r.EquipmentId||'')+' '+(r.DefectSymptom||'')).toLowerCase().includes(qv)) return false;
+        return true;
+      });
+      const done = shown.filter(r=>r._done).length;
+      card.querySelector('.psm-sum').textContent = shown.length + ' รายการ · เสร็จ ' + done + ' · ค้าง ' + (shown.length-done);
+      card.querySelector('.psm-count').textContent = shown.length + ' / ' + base.length + ' รายการ';
+      card.querySelector('.psm-body').innerHTML = shown.map((r,i)=>`
+        <tr>
+          <td class="datecell">${i+1}</td>
+          <td><span class="prio-chip prio-${r.Priority}">${r.Priority}</span></td>
+          <td class="datecell">${r._date ? r._date.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'}) : (r.Timestamp||'-')}</td>
+          <td class="eq">${r.OmsOrder||'-'}</td>
+          <td>${r.Area||'-'}</td>
+          <td><span class="eq">${r.EquipmentId||'-'}</span><br><span class="sym">${r.EquipmentType||''}</span></td>
+          <td><span class="sym">${r.DefectSymptom||''}</span></td>
+          <td><span class="dept-badge">${r.Department||'ยังไม่มีผู้รับผิดชอบ'}</span></td>
+          <td>${ksfBadge(r.OmsStatus)}</td>
+          <td>${ksfBadge(r.KsfStatus)}</td>
+          <td>${r.JobStatus ? `<span class="badge ${r.JobStatus==='แก้ไขแล้วเสร็จ'?'b-done':'b-pending'}">${r.JobStatus}</span>` : '<span style="color:var(--muted);">-</span>'}</td>
+        </tr>`).join('') || '<tr><td colspan="11" style="text-align:center;color:var(--muted);">ไม่มีรายการ</td></tr>';
+    }
+    card.querySelectorAll('[data-k]').forEach(el=>{
+      const k = el.dataset.k;
+      el.addEventListener(k==='q' ? 'input' : 'change', ()=>{ st[k] = el.value; draw(); });
+    });
+    card.querySelector('.psm-dl').addEventListener('click', ()=>{
+      const line = (r,i)=>[i+1, r.Priority, r.Timestamp||'', r.OmsOrder||'', r.ZpmOrder||'', r.Area||'', r.EquipmentId||'', r.EquipmentType||'', r.DefectSymptom||'', r.Department||'ยังไม่มีผู้รับผิดชอบ', r.KsfDetails||'', r.OmsStatus||'', r.KsfStatus||'', r.JobStatus||''];
+      const wb = XLSX.utils.book_new();
+      let n = 0;
+      const add = (name, rows)=>{ if(!rows.length) return; XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([PSM_XLS_HEADERS, ...rows.map(line)]), name.slice(0,31)); n++; };
+      ['ผสม.','ผปค.','ผอส.','ยังไม่มีผู้รับผิดชอบ'].forEach(d=> add(d.replace(/\./g,'') || 'ไม่ระบุ', shown.filter(r=>(r.Department||'ยังไม่มีผู้รับผิดชอบ')===d)));
+      ['REL','TECO','CLSD'].forEach(x=> add(x, shown.filter(r=>r.KsfStatus===x)));
+      if(!n) return;
+      saveWorkbook(wb, `FODIS_${t.name.replace(/\s+/g,'')}_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+    draw();
+  });
 }
+
 // ---- สร้าง/รีเฟรชทุกส่วนของ dashboard จากตัวแปร DATA ปัจจุบัน ----
 function initAll(){
   // as-of
