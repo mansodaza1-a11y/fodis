@@ -989,7 +989,7 @@ function renderPsmTeams(){
       </div>
       <details style="margin-bottom:10px;"><summary class="hint" style="cursor:pointer;">สถานที่ที่รับผิดชอบ (${t.areas.length} แห่ง)</summary><div class="hint">${t.areas.join(' · ')}</div></details>
       <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; margin-bottom:14px;">
-        <div class="card" style="box-shadow:none;"><h2>สถานะ (กสฟ.)</h2><div class="hint">REL · TECO · CLSD</div><div class="chart-wrap" style="height:210px;"><canvas id="chart_${t.id}_ksf"></canvas></div></div>
+        <div class="card" style="box-shadow:none;"><h2>สถานะงาน ${t.name}</h2><div class="hint">REL · TECO · CLSD</div><div class="chart-wrap" style="height:210px;"><canvas id="chart_${t.id}_ksf"></canvas></div></div>
         <div class="card" style="box-shadow:none;"><h2>ประเภทอุปกรณ์</h2><div class="hint">เรียงจากมากไปน้อย</div><div class="chart-wrap psm-equip-wrap" style="height:210px;"><canvas id="chart_${t.id}_equip"></canvas></div></div>
         <div class="card" style="box-shadow:none;"><h2>จำนวนรายการแยกตามสถานที่</h2><div class="hint">สฟฟ. ที่ทีมรับผิดชอบ</div><div class="chart-wrap psm-area-wrap" style="height:210px;"><canvas id="chart_${t.id}_area"></canvas></div></div>
       </div>
