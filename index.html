@@ -1098,7 +1098,6 @@ function renderPsmTeams(){
           <td>${ksfBadge(r.KsfStatus)}</td>
           <td>${r.JobStatus ? `<span class="badge ${r.JobStatus==='แก้ไขแล้วเสร็จ'?'b-done':'b-pending'}">${r.JobStatus}</span>` : '<span style="color:var(--muted);">-</span>'}</td>
         </tr>`).join('') || '<tr><td colspan="11" style="text-align:center;color:var(--muted);">ไม่มีรายการ</td></tr>';
-      drawCharts();
     }
     function barChart(key, canvasId, wrapSel, entries, color){
       const wrap = card.querySelector(wrapSel);
@@ -1121,7 +1120,7 @@ function renderPsmTeams(){
     }
     function drawCharts(){
       const ksf = {'REL':0,'TECO':0,'CLSD':0};
-      shown.forEach(r=>{ if(ksf[r.KsfStatus]!==undefined) ksf[r.KsfStatus]++; });
+      base.forEach(r=>{ if(ksf[r.KsfStatus]!==undefined) ksf[r.KsfStatus]++; });   // แผนภูมิแสดงทั้งหมดของทีม ไม่เปลี่ยนตามตัวกรอง
       destroyChart(t.id+'Ksf');
       charts[t.id+'Ksf'] = new Chart(document.getElementById('chart_'+t.id+'_ksf'), {
         type:'doughnut', plugins:[ChartDataLabels],
@@ -1135,7 +1134,7 @@ function renderPsmTeams(){
           }
         }
       });
-      const count = f => { const m = {}; shown.forEach(r=>{ const k = f(r) || 'ไม่ระบุ'; m[k] = (m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); };
+      const count = f => { const m = {}; base.forEach(r=>{ const k = f(r) || 'ไม่ระบุ'; m[k] = (m[k]||0)+1; }); return Object.entries(m).sort((a,b)=>b[1]-a[1]); };
       barChart(t.id+'Equip', 'chart_'+t.id+'_equip', '.psm-equip-wrap', count(r=>r.EquipmentType), t.color);
       barChart(t.id+'Area', 'chart_'+t.id+'_area', '.psm-area-wrap', count(r=>norm(r.Area)), t.color);
     }
@@ -1154,6 +1153,7 @@ function renderPsmTeams(){
       saveWorkbook(wb, `FODIS_${t.name.replace(/\s+/g,'')}_${new Date().toISOString().slice(0,10)}.xlsx`);
     });
     draw();
+    drawCharts();
   });
 }
 
