@@ -970,7 +970,7 @@ function renderPsmTeams(){
   const teamRows = {};
   box.innerHTML = PSM_TEAMS.map(t=>{
     const set = new Set(t.areas.map(norm));
-    teamRows[t.id] = DATA.filter(r=> set.has(norm(r.Area)));
+    teamRows[t.id] = DATA.filter(r=> r.Department==='ผสม.' && set.has(norm(r.Area)));   // เฉพาะรายการของแผนก ผสม.
     const st = PSM_STATE[t.id] = Object.assign({dept:'',oms:'',prio:'',ksf:'',equip:'',job:'',area:'',q:''}, PSM_STATE[t.id]);
     const base = teamRows[t.id];
     const depts = [...new Set([...ALL_DEPTS, ...base.map(r=>r.Department).filter(Boolean), 'ยังไม่มีผู้รับผิดชอบ'])];
@@ -990,7 +990,6 @@ function renderPsmTeams(){
       <details style="margin-bottom:10px;"><summary class="hint" style="cursor:pointer;">สถานที่ที่รับผิดชอบ (${t.areas.length} แห่ง)</summary><div class="hint">${t.areas.join(' · ')}</div></details>
       <div class="filters">
         ${sel('area','พื้นที่', areas.map(a=>opt(a,st.area)).join(''))}
-        ${sel('dept','แผนก', depts.map(d=>opt(d,st.dept)).join(''))}
         ${sel('oms','สถานะ (OMS)', copyOpts('fStatus', st.oms))}
         ${sel('prio','ความสำคัญ', ['มาก','ปานกลาง','ต่ำ'].map(x=>opt(x,st.prio)).join(''))}
         ${sel('ksf','สถานะ (กสฟ.)', copyOpts('fKsf', st.ksf))}
