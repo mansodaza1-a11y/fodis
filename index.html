@@ -498,6 +498,8 @@
           <div class="chart-wrap" style="height:200px;"><canvas id="chartPsmKsf"></canvas></div>
         </div>
       </div>
+      <div class="section-head"><h2>รายการตามสถานที่ที่แต่ละทีมรับผิดชอบ</h2></div>
+      <div id="psmTeams"></div>
       <div class="card" style="margin-bottom:16px;">
         <h2>สัดส่วนประเภทอุปกรณ์ของแผนก ผสม.</h2>
         <div class="hint">นับเฉพาะรายการที่มอบหมายให้แผนก ผสม. — เรียงจากมากไปน้อย</div>
@@ -948,6 +950,57 @@ function render(){
 [fDept, fStatus, fPriority, fKsf, fEquip, fJobStatus].forEach(el => el.addEventListener('change', render));
 fSearch.addEventListener('input', render);
 
+
+// ---- ผสม.(ต3): รายการแยกตามทีมที่รับผิดชอบสถานที่ (สฟฟ.) ----
+const PSM_TEAMS = [
+  { id:'team1', name:'ทีม 1', color:'#3D7EF5',
+    people:['นายธวัชชัย อินทสระ (หัวหน้าทีม)','นายปานสิทธิ์ พิทักษ์ธีระบัณฑิต'],
+    areas:['สฟฟ.จะนะ','สฟฟ.หาดใหญ่ 2','สฟฟ.หาดใหญ่ 4','สฟฟ.หาดใหญ่ 5','สฟฟ.ระแงะ','สฟฟ.พัทลุง','สฟฟ.ควนขนุน','สฟฟ.ระโนด','สฟฟ.สทิงพระ','สฟฟ.สิงหนคร','สฟฟ.สงขลา 1','สฟฟ.สงขลา 2','สฟฟ.หนองจิก','สฟฟ.สงขลา 3','สฟฟ.ปัตตานี 1','สฟฟ.ปัตตานี 2','สฟฟ.สายบุรี','สฟฟ.นราธิวาส','สฟฟ.สุไหงโกลก','สฟฟ.นาทวี','สฟฟ.ตากใบ'] },
+  { id:'team2', name:'ทีม 2', color:'#DC4C4C',
+    people:['นายวีระชัย จุลพันล์ (หัวหน้าทีม)','นายประวิทย์ อุตมะมุณีย์'],
+    areas:['สฟฟ.ฉลุง','สฟฟ.หาดใหญ่ 1','สฟฟ.หาดใหญ่ 3','สฟฟ.สะเดา 1','สฟฟ.บางกล่ำ','สฟฟ.ด่านนอก','สฟฟ.พังลา','สฟฟ.ทุ่งลุง','สฟฟ.รัตภูมิ','สฟฟ.ป่าบอน','สฟฟ.ควนกาหลง','สฟฟ.สตูล','สฟฟ.ละงู','สฟฟ.ยะลา 1','สฟฟ.ยะลา 2','สฟฟ.ยะลา 3','สฟฟ.ยุพราชันย์','สฟฟ.คลองแงะ','สฟฟ.สะบ้าย้อย'] }
+];
+function renderPsmTeams(){
+  const box = document.getElementById('psmTeams');
+  if(!box) return;
+  const norm = a => String(a||'').replace(/\s+/g,' ').trim();
+  box.innerHTML = PSM_TEAMS.map(t=>{
+    const set = new Set(t.areas.map(norm));
+    const rows = DATA.filter(r=> set.has(norm(r.Area))).sort((a,b)=> (b._date||0)-(a._date||0));
+    const done = rows.filter(r=>r._done).length;
+    const body = rows.map((r,i)=>`
+      <tr>
+        <td class="datecell">${i+1}</td>
+        <td><span class="prio-chip prio-${r.Priority}">${r.Priority}</span></td>
+        <td class="datecell">${r._date ? r._date.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'}) : (r.Timestamp||'-')}</td>
+        <td class="eq">${r.OmsOrder||'-'}</td>
+        <td>${r.Area||'-'}</td>
+        <td><span class="eq">${r.EquipmentId||'-'}</span><br><span class="sym">${r.EquipmentType||''}</span></td>
+        <td><span class="sym">${r.DefectSymptom||''}</span></td>
+        <td><span class="dept-badge">${r.Department||'ยังไม่มีผู้รับผิดชอบ'}</span></td>
+        <td>${ksfBadge(r.OmsStatus)}</td>
+        <td>${ksfBadge(r.KsfStatus)}</td>
+        <td>${r.JobStatus ? `<span class="badge ${r.JobStatus==='แก้ไขแล้วเสร็จ'?'b-done':'b-pending'}">${r.JobStatus}</span>` : '<span style="color:var(--muted);">-</span>'}</td>
+      </tr>`).join('');
+    return `
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+        <div style="min-width:0;">
+          <h2 style="color:${t.color};">${t.name}</h2>
+          <div class="hint" style="margin-bottom:6px;">${t.people.join(' · ')}</div>
+        </div>
+        <div style="font-family:var(--mono); font-size:13px;">${rows.length} รายการ · เสร็จ ${done} · ค้าง ${rows.length-done}</div>
+      </div>
+      <details style="margin-bottom:10px;"><summary class="hint" style="cursor:pointer;">สถานที่ที่รับผิดชอบ (${t.areas.length} แห่ง)</summary><div class="hint">${t.areas.join(' · ')}</div></details>
+      <div class="table-card"><div class="table-scroll" style="max-height:460px;">
+        <table>
+          <thead><tr><th>ลำดับ</th><th>ความสำคัญ</th><th>วันที่แจ้ง</th><th>ใบสั่ง (OMS)</th><th>พื้นที่</th><th>อุปกรณ์</th><th>อาการชำรุด</th><th>แผนก</th><th>สถานะ OMS</th><th>สถานะ (กสฟ.)</th><th>สถานะงาน</th></tr></thead>
+          <tbody>${body || '<tr><td colspan="11" style="text-align:center;color:var(--muted);">ไม่มีรายการ</td></tr>'}</tbody>
+        </table>
+      </div></div>
+    </div>`;
+  }).join('');
+}
 // ---- สร้าง/รีเฟรชทุกส่วนของ dashboard จากตัวแปร DATA ปัจจุบัน ----
 function initAll(){
   // as-of
@@ -1064,6 +1117,7 @@ function initAll(){
       }
     });
   }
+  renderPsmTeams();
   renderEquipByDept('psmEquip', 'chartPsmEquip', 'ผสม.', '#DC4C4C');
   renderEquipByDept('ppkEquip', 'chartPpkEquip', 'ผปค.', '#3D7EF5');
   renderEquipByDept('posEquip', 'chartPosEquip', 'ผอส.', '#F59E0B');
