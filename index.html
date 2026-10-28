@@ -305,6 +305,10 @@
   .kpi-card{border-top:none;}
   .table-card{border-top:3px solid color-mix(in srgb,var(--ta) 55%,#fff);}
   .topbar h1{font-size:25px; background:linear-gradient(90deg,#0B5A51,#0F7A6E 60%,#3D7EF5); -webkit-background-clip:text; background-clip:text; color:transparent; text-shadow:none;}
+  .psm-teamtitle{display:inline-block; font-size:30px; font-weight:800; line-height:1; letter-spacing:-.01em; color:#fff; padding:10px 26px 12px; border-radius:14px; margin-bottom:6px;
+    background:linear-gradient(145deg, color-mix(in srgb,var(--tc) 72%,#fff) 0%, var(--tc) 55%, color-mix(in srgb,var(--tc) 82%,#000) 100%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.55), inset 0 -3px 0 rgba(0,0,0,.12), 0 2px 4px color-mix(in srgb,var(--tc) 40%,transparent), 0 12px 24px -8px color-mix(in srgb,var(--tc) 70%,transparent);
+    text-shadow:0 2px 4px rgba(0,0,0,.28);}
   @media (prefers-reduced-motion: reduce){ .card, .table-card, .kpi-card, .btn-primary{transition:none;} .card:hover,.kpi-card:hover,.btn-primary:hover{transform:none;} }
 </style>
 </head>
@@ -1065,7 +1069,7 @@ function renderPsmTeams(){
     <div class="card psm-team" data-team="${t.id}" style="margin-bottom:16px;">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
         <div style="min-width:0;">
-          <h2 style="color:${t.color};">${t.name}</h2>
+          <div class="psm-teamtitle" style="--tc:${t.color};">${t.name}</div>
           <div class="psm-people" style="--tc:${t.color};">${t.people.map(pp=>{
             const m = pp.match(/^(.*?)\s*\((.*)\)\s*$/); const nm = m ? m[1] : pp; const role = m ? m[2] : 'สมาชิกทีม';
             const ini = nm.replace(/^(นาย|นางสาว|นาง)\s*/, '').charAt(0);
